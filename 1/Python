@@ -1,62 +1,53 @@
-def Not (a):
-  if (a == 1):
-    return 0
-  else:
-    return 1
+def Nand(a, b):
+    return 1 if not (a and b) else 0
 
-def And (a,b):
-  if(a == 1 and b == 1):
-    return 1
-  else:
-    return 0
+def Not(a):
+    return Nand(a, a)
 
-def Or (a,b):
-  if(a == 1 or b == 1):
-    return 1
-  else:
-    return 0
-def Xor (a,b):
-  nota = Not(a)
-  notb = Not(b)
-  aAndNotb = And(a,notb)
-  notaAndb = And(nota,b)
-  return Or(aAndNotb,notaAndb)
+def And(a, b):
+    return Not(Nand(a, b))
 
-def Nand (a,b):
-  return Not(And(a,b))
+def Or(a, b):
+    return Nand(Not(a), Not(b))
 
-def Nor (a,b):
-  return Not(Or(a,b))
+def Xor(a, b):
+    return And(Or(a, b), Nand(a, b))
 
-def Xnor (a,b):
-  return Not(Xor(a,b))
+def Nor(a, b):
+    return Not(Or(a, b))
 
-def Mux (a,b,sel):
-  not_sel = Not(sel)
-  nand_a_notsel = Nand(a,not_sel)
-  nandbsel = Nand(b,sel)
-  return Nand(nand_a_notsel,nandbsel)
+def Xnor(a, b):
+    return Not(Xor(a, b))
 
-def DMux(input, sel):
-    return (And(input, Not(sel)), And(input, sel))
+def Mux(a, b, sel):
+    return Or(And(a, Not(sel)), And(b, sel))
+
+def DMux(inp, sel):
+    return (And(inp, Not(sel)), And(inp, sel))
+
 def Not16(a):
     return tuple(Not(bit) for bit in a)
+
 def And16(a, b):
     return tuple(And(bit_a, bit_b) for bit_a, bit_b in zip(a, b))
+
 def Or16(a, b):
     return tuple(Or(bit_a, bit_b) for bit_a, bit_b in zip(a, b))
+
 def Mux16(a, b, sel):
-    return a if sel == 0 else b
+    return tuple(Mux(bit_a, bit_b, sel) for bit_a, bit_b in zip(a, b))
+
 def Or8Way(a):
     return Or(a[0], Or(a[1], Or(a[2], Or(a[3], Or(a[4], Or(a[5], Or(a[6], a[7])))))))
-def DMux4Way(input, sel):
-    a, b = DMux(input, sel[1])
+
+def DMux4Way(inp, sel):
+    a, b = DMux(inp, sel[1])
     c, d = DMux(a, sel[0])
     e, f = DMux(b, sel[0])
     return c, d, e, f
 
-def DMux8Way(input, sel):
-    a, b, c, d = DMux4Way(input, sel[1:])
+def DMux8Way(inp, sel):
+    a, b, c, d = DMux4Way(inp, sel[1:])
     e, f = DMux(a, sel[0])
     g, h = DMux(b, sel[0])
     i, j = DMux(c, sel[0])
@@ -70,15 +61,26 @@ def Mux8Way16(a, b, c, d, e, f, g, h, sel):
     return Mux16(Mux4Way16(a, b, c, d, sel[:2]), Mux4Way16(e, f, g, h, sel[:2]), sel[2])
 
 def verify_logic_gate(logic_gate, truth_table):
-  for inputs, expected_output in truth_table.items():
-      if isinstance(inputs, int):
-          actual_output = logic_gate(inputs)
-      else:
-          actual_output = logic_gate(*inputs)  # Unpack tuple for multi-input gates
+    for inputs, expected_output in truth_table.items():
+        if isinstance(inputs, int):
+            actual_output = logic_gate(inputs)
+        else:
+            actual_output = logic_gate(*inputs)
+        if actual_output != expected_output:
+            print(f"Test failed for inputs {inputs}: expected {expected_output}, got {actual_output}")
+            return False
+    print("All tests passed!")
+    return True
 
-      if actual_output != expected_output:
-          print(f"Test failed for inputs {inputs}: "
-                f"expected {expected_output}, got {actual_output}")
-          return False
-  print("All tests passed!")
-  return True
+# Pruebas de verdad
+True_Table_NOT = { 0: 1, 1: 0 }
+True_Table_AND = {(0, 0): 0, (0, 1): 0, (1, 0): 0, (1, 1): 1}
+True_Table_OR = {(0, 0): 0, (0, 1): 1, (1, 0): 1, (1, 1): 1}
+True_Table_XOR = {(0, 0): 0, (0, 1): 1, (1, 0): 1, (1, 1): 0}
+True_Table_NAND = {(0, 0): 1, (0, 1): 1, (1, 0): 1, (1, 1): 0}
+True_Table_NOR = {(0, 0): 1, (0, 1): 0, (1, 0): 0, (1, 1): 0}
+True_Table_XNOR = {(0, 0): 1, (0, 1): 0, (1, 0): 0, (1, 1): 1}
+True_Table_Mux = {(0, 0, 0): 0, (0, 0, 1): 0, (0, 1, 0): 1, (0, 1, 1): 1, (1, 0, 0): 0, (1, 0, 1): 1, (1, 1, 0): 0, (1, 1, 1): 1}
+True_Table_Dmux = {(0, 0): (0, 0), (0, 1): (0, 0), (1, 0): (1, 0), (1, 1): (0, 1)}
+
+verify_logic_gate(Xor, True_Table_XOR)
